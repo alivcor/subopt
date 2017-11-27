@@ -34,7 +34,7 @@ def _preprocess_image(input_image):
     return processed_input_tensor
 
 
-def init_load_extractor_model():
+def init_load_subopt_model():
     vgg_model = VGG16(include_top=True, weights='imagenet')
     x = Dense(9, activation='softmax', name='predictions')(vgg_model.layers[-2].output)
     # Then create the corresponding model
@@ -43,8 +43,10 @@ def init_load_extractor_model():
     return subopt_vgg
 
 
-def fine_tune_network(network):
-    pass
+def fine_tune_network(network, trainX, trainY):
+    network.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    network.fit(trainX, trainY, batch_size=10, epochs=700)
+    return network
 
 
 def process_experiment(experiment_id):
@@ -67,21 +69,25 @@ def process_experiment(experiment_id):
     print processed_images.shape, processed_outputs.shape
     return processed_images, processed_outputs
 
-experiment_ids = range(1,10)
-trainX = []
-trainY = []
-for experiment_id in experiment_ids:
-    print "Processing experiment ", experiment_id
-    processed_images, processed_outputs = process_experiment(experiment_id)
-    trainX.append(processed_images)
-    trainY.append(processed_outputs)
+
+def preprocess_data(num_experiments):
+    experiment_ids = range(1,num_experiments+1)
+    trainX = []
+    trainY = []
+    for experiment_id in experiment_ids:
+        print "Processing experiment ", experiment_id
+        processed_images, processed_outputs = process_experiment(experiment_id)
+        trainX.append(processed_images)
+        trainY.append(processed_outputs)
+
+    trainX = np.reshape(np.squeeze(np.array(trainX)), (-1, 224, 224, 3))
+    trainY = np.reshape(np.squeeze(np.array(trainY)),  (-1, 9))
+
+    print "Processed all experiments."
+    print trainX.shape, trainY.shape
+    return trainX, trainY
 
 
-
-trainX = np.reshape(np.squeeze(np.array(trainX)), (-1, 224, 224, 3))
-trainY = np.reshape(np.squeeze(np.array(trainY)),  (-1, 9))
-
-print "Processed all experiments."
-print trainX.shape, trainY.shape
-
-
+subopt_model = init_load_subopt_model()
+trainX, trainY = preprocess_data(9)
+tuned_network = fine_tune_network(subopt_model, trainX, trainY)
