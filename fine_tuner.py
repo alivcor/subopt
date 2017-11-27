@@ -1,3 +1,7 @@
+########################################
+# Author : alivcor (Abhinandan Dubey)
+# Stony Brook university
+
 import cv2, numpy as np
 from vgg16_feat import VGG16
 from keras.models import Model
